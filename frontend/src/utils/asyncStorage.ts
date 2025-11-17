@@ -10,16 +10,24 @@ export interface IAsyncStorage {
   removeItem(key: string): Promise<void>;
 }
 
+/** Typed interface to represent the native async-storage module's default export. */
+type NativeAsyncStorageModule = IAsyncStorage;
+
 /**
- * Lightweight web polyfill using window.localStorage for Expo web builds.
- * On native platforms, we defer to '@react-native-async-storage/async-storage'.
+ * Lightweight storage abstraction:
+ * - Web: uses localStorage if available.
+ * - Native: attempts to dynamically import '@react-native-async-storage/async-storage'.
+ *           If the native module is not installed/available, it gracefully no-ops.
  */
 let storage: IAsyncStorage;
 
-if (Platform.OS === 'web') {
-  const safeLocalStorage = typeof window !== 'undefined' ? window.localStorage : undefined;
+const createWebStorage = (): IAsyncStorage => {
+  const safeLocalStorage =
+    typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+      ? window.localStorage
+      : undefined;
 
-  storage = {
+  return {
     async getItem(key: string) {
       try {
         if (!safeLocalStorage) return null;
@@ -34,7 +42,7 @@ if (Platform.OS === 'web') {
         if (!safeLocalStorage) return;
         safeLocalStorage.setItem(key, value);
       } catch {
-        // ignore
+        // ignore errors in web fallback
       }
     },
     async removeItem(key: string) {
@@ -46,34 +54,64 @@ if (Platform.OS === 'web') {
       }
     },
   };
-} else {
-  // Native: use actual AsyncStorage implementation via dynamic import to avoid bundling issues on web.
-  // We provide thin wrappers that import on first use to keep initialization synchronous.
-  let nativeModulePromise: Promise<{
-    getItem(key: string): Promise<string | null>;
-    setItem(key: string, value: string): Promise<void>;
-    removeItem(key: string): Promise<void>;
-  }> | null = null;
+};
 
-  const getNative = async () => {
+const createNoopStorage = (): IAsyncStorage => ({
+  async getItem() {
+    return null;
+  },
+  async setItem() {
+    // noop
+  },
+  async removeItem() {
+    // noop
+  },
+});
+
+if (Platform.OS === 'web') {
+  storage = createWebStorage();
+} else {
+  // Native platforms: attempt to load async-storage dynamically on first access.
+  let nativeModulePromise: Promise<NativeAsyncStorageModule> | null = null;
+
+  const getNative = async (): Promise<NativeAsyncStorageModule> => {
     if (!nativeModulePromise) {
-      nativeModulePromise = import('@react-native-async-storage/async-storage').then(m => m.default);
+      try {
+        nativeModulePromise = import('@react-native-async-storage/async-storage').then(
+          (m) => m.default as NativeAsyncStorageModule
+        );
+      } catch {
+        // If dynamic import itself throws synchronously, fall back to noop.
+        nativeModulePromise = Promise.resolve(createNoopStorage());
+      }
     }
     return nativeModulePromise;
   };
 
   storage = {
     async getItem(key: string) {
-      const Native = await getNative();
-      return Native.getItem(key);
+      try {
+        const Native = await getNative();
+        return Native.getItem(key);
+      } catch {
+        return null;
+      }
     },
     async setItem(key: string, value: string) {
-      const Native = await getNative();
-      return Native.setItem(key, value);
+      try {
+        const Native = await getNative();
+        await Native.setItem(key, value);
+      } catch {
+        // noop if unavailable
+      }
     },
     async removeItem(key: string) {
-      const Native = await getNative();
-      return Native.removeItem(key);
+      try {
+        const Native = await getNative();
+        await Native.removeItem(key);
+      } catch {
+        // noop if unavailable
+      }
     },
   };
 }
