@@ -13,7 +13,7 @@ import Board from '../components/Board';
 import Controls from '../components/Controls';
 import Scoreboard from '../components/Scoreboard';
 import { colors } from '../theme/colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '../utils/asyncStorage';
 import {
   BoardState,
   Player,

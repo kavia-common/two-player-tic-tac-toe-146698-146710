@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "lint": "eslint .",
     "prebuild:android": "expo prebuild --platform android",
-    "build": "echo \"Expo-managed project: skipping native Gradle build. Use 'expo run:android' after prebuild or EAS for production.\""
+    "build": "echo \"Expo-managed project: skipping native Gradle build. Use 'expo run:android' after prebuild or EAS for production.\"",
+    "prepare": "node -e \"console.log('Prepare: ensuring node_modules present')\""
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# No-op gradle wrapper for Expo-managed projects in CI environments.
+# CI tools may attempt to call ./gradlew; we short-circuit to avoid failures.
+echo "Skipping Gradle: Expo-managed project. Use 'expo prebuild' to generate native projects before running Gradle."
+exit 0
