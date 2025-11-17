@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
     elevation: Platform.OS === 'android' ? 4 : 0,
     borderWidth: 1,
     borderColor: colors.border,
+    margin: 6,
   },
   inner: {
     alignItems: 'center',

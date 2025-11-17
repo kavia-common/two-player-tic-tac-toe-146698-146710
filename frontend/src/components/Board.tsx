@@ -40,10 +40,12 @@ const styles = StyleSheet.create({
   grid: {
     width: '100%',
     maxWidth: 320,
-    gap: 12,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
+    // Use negative margin container + cell margins for consistent spacing instead of 'gap'
+    marginHorizontal: -6,
+    marginVertical: -6,
   },
 });
 
